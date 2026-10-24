@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#173b70">
+<title>CampusMate - Student App</title>
+
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f2f5fb;
+  color: #192b46;
+}
+header {
+  background: #173b70;
+  color: white;
+  padding: 24px 18px;
+  border-radius: 0 0 24px 24px;
+}
+header h1 { margin: 0 0 8px; }
+header p { margin: 0; }
+main { padding: 16px; max-width: 700px; margin: auto; }
+nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+button {
+  background: #2459a6;
+  color: white;
+  border: 0;
+  padding: 11px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+nav button { flex: 1; }
+.card {
+  background: white;
+  padding: 18px;
+  margin-bottom: 14px;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px #18365b12;
+}
+h2 { font-size: 19px; margin-top: 0; }
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0 10px;
+  border: 1px solid #ccd5e4;
+  border-radius: 8px;
+}
+.item {
+  padding: 12px 0;
+  border-bottom: 1px solid #e7ebf2;
+}
+.small { color: #63718a; font-size: 14px; }
+.delete { background: #b52d3a; float: right; }
+.page { display: none; }
+.page.active { display: block; }
+footer { text-align: center; padding: 20px; color: #63718a; }
+</style>
+</head>
+
+<body>
+<header>
+  <h1>CampusMate 🎓</h1>
+  <p>Your college life, organized.</p>
+</header>
+
+<main>
+  <nav>
+    <button onclick="showPage('home')">Home</button>
+    <button onclick="showPage('timetable')">Timetable</button>
+    <button onclick="showPage('tasks')">Assignments</button>
+    <button onclick="showPage('attendance')">Attendance</button>
+  </nav>
+
+  <section id="home" class="page active">
+    <div class="card">
+      <h2>Welcome, Student! 👋</h2>
+      <p>Manage your daily college activities in one place.</p>
+      <p class="small" id="today"></p>
+    </div>
+    <div class="card">
+      <h2>📚 Today's Timetable</h2>
+      <p>9:00 AM — Digital Electronics</p>
+      <p>10:00 AM — Wireless Communication</p>
+      <p>11:00 AM — VLSI Design</p>
+      <p class="small">Sample timetable. Edit it for your college.</p>
+    </div>
+    <div class="card">
+      <h2>✅ My Assignments</h2>
+      <p id="taskSummary">Loading tasks...</p>
+      <button onclick="showPage('tasks')">View assignments</button>
+    </div>
+  </section>
+
+  <section id="timetable" class="page">
+    <div class="card">
+      <h2>📅 Sample Timetable</h2>
+      <div class="item">Monday — Digital Electronics</div>
+      <div class="item">Tuesday — Wireless Communication</div>
+      <div class="item">Wednesday — VLSI Design</div>
+      <div class="item">Thursday — Embedded Systems</div>
+      <div class="item">Friday — Laboratory</div>
+      <p class="small">Change these sample subjects to your real timetable.</p>
+    </div>
+  </section>
+
+  <section id="tasks" class="page">
+    <div class="card">
+      <h2>📝 Add Assignment</h2>
+      <form id="taskForm">
+        <label for="taskName">Assignment name</label>
+        <input id="taskName" placeholder="e.g. VLSI record" required>
+        <label for="taskDate">Due date</label>
+        <input id="taskDate" type="date" required>
+        <button type="submit">Add Assignment</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>My Task List</h2>
+      <div id="taskList"></div>
+    </div>
+  </section>
+
+  <section id="attendance" class="page">
+    <div class="card">
+      <h2>📊 Attendance Tracker</h2>
+      <label for="present">Classes attended</label>
+      <input id="present" type="number" min="0" value="0">
+      <label for="total">Total classes conducted</label>
+      <input id="total" type="number" min="0" value="0">
+      <button onclick="calculateAttendance()">Calculate</button>
+      <h2 id="result">Attendance: 0%</h2>
+      <p class="small">Enter accurate class counts. This is a personal tracker.</p>
+    </div>
+  </section>
+</main>
+
+<footer>CampusMate © 2026</footer>
+
+<script>
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('today').textContent =
+  new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+
+let tasks = [];
+try {
+  tasks = JSON.parse(localStorage.getItem('campusTasks') || '[]');
+  if (!Array.isArray(tasks)) tasks = [];
+} catch (e) {
+  tasks = [];
+}
+
+function saveTasks() {
+  localStorage.setItem('campusTasks', JSON.stringify(tasks));
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  list.replaceChildren();
+
+  if (tasks.length === 0) {
+    list.textContent = 'No assignments yet. Add your first task!';
+  }
+
+  tasks.forEach((task, index) => {
+    const item = document.createElement('div');
+    item.className = 'item';
+
+    const title = document.createElement('strong');
+    title.textContent = (task.done ? '✅ ' : '📌 ') + task.name;
+
+    const date = document.createElement('p');
+    date.className = 'small';
+    date.textContent = 'Due: ' + task.date;
+
+    const done = document.createElement('button');
+    done.textContent = task.done ? 'Undo' : 'Complete';
+    done.onclick = () => {
+      tasks[index].done = !tasks[index].done;
+      saveTasks();
+    };
+
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.className = 'delete';
+    del.onclick = () => {
+      tasks.splice(index, 1);
+      saveTasks();
+    };
+
+    item.append(title, date, done, document.createTextNode(' '), del);
+    list.appendChild(item);
+  });
+
+  document.getElementById('taskSummary').textContent =
+    tasks.filter(task => !task.done).length + ' pending assignment(s)';
+}
+
+document.getElementById('taskForm').addEventListener('submit', event => {
+  event.preventDefault();
+
+  const name = document.getElementById('taskName').value.trim();
+  const date = document.getElementById('taskDate').value;
+
+  if (!name || !date) return;
+
+  tasks.push({ name, date, done: false });
+  saveTasks();
+  event.target.reset();
+});
+
+function calculateAttendance() {
+  const present = Number(document.getElementById('present').value);
+  const total = Number(document.getElementById('total').value);
+  const result = document.getElementById('result');
+
+  if (!Number.isInteger(present) || !Number.isInteger(total) ||
+      present < 0 || total < 1 || present > total) {
+    result.textContent = 'Please enter valid class counts.';
+    return;
+  }
+
+  const percentage = (present / total * 100).toFixed(1);
+  result.textContent = 'Attendance: ' + percentage + '%';
+}
+
+renderTasks();
+</script>
+</body>
+</html>
